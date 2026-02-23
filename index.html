@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nightreign Random Picker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Spectral:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      background-color: #080a0f;
+      color: #e8e4e0;
+      font-family: 'Spectral', Georgia, serif;
+      font-size: 14px;
+      overflow-x: hidden;
+    }
+
+    /* --- Background --- */
+    .bg-fixed {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -2;
+      background: url('images/background.jpg') center center / cover no-repeat;
+    }
+
+    .bg-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      background: rgba(0, 0, 0, 0.65);
+    }
+
+    /* --- Main Layout --- */
+    .main-container {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px 60px;
+    }
+
+    /* --- Title --- */
+    .page-title {
+      text-align: center;
+      margin-bottom: 50px;
+    }
+
+    .page-title h1 {
+      font-family: 'Spectral', Georgia, serif;
+      font-weight: 500;
+      font-size: 2.2em;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #fff;
+      text-shadow: 0 0 20px rgba(101, 176, 216, 0.4), 0 2px 4px rgba(0, 0, 0, 0.8);
+    }
+
+    .page-title .subtitle {
+      font-size: 0.95em;
+      color: #65b0d8;
+      margin-top: 8px;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+    }
+
+    .title-hr {
+      width: 200px;
+      height: 2px;
+      margin: 16px auto 0;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        #65b0d8 30%,
+        #98dbff 50%,
+        #65b0d8 70%,
+        transparent
+      );
+      border: none;
+    }
+
+    /* --- Card Grid --- */
+    .card-grid {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      flex-wrap: nowrap;
+      max-width: 1100px;
+    }
+
+    /* --- Character Card (wiki_table inspired) --- */
+    .character-card {
+      position: relative;
+      flex: 0 0 280px;
+      width: 280px;
+      background: #060a14e8;
+      filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.7));
+      cursor: pointer;
+      transition: transform 0.3s ease, filter 0.3s ease;
+
+      /* Border-image mimic: layered borders */
+      border: 2px solid transparent;
+      border-image: linear-gradient(
+        160deg,
+        #3a5f7a 0%,
+        #1a2a3a 30%,
+        #0d1520 60%,
+        #1a2a3a 80%,
+        #3a5f7a 100%
+      ) 1;
+    }
+
+    .character-card::before {
+      content: '';
+      position: absolute;
+      inset: -6px;
+      border: 1px solid rgba(101, 176, 216, 0.15);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .character-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border: 1px solid rgba(101, 176, 216, 0.08);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .character-card:hover {
+      transform: translateY(-6px);
+      filter: drop-shadow(0 0 16px rgba(101, 176, 216, 0.3));
+    }
+
+    .character-card:hover .card-inner {
+      background: #3b496320;
+    }
+
+    /* --- Card Inner Wrapper --- */
+    .card-inner {
+      position: relative;
+      transition: background 0.3s ease;
+    }
+
+    /* --- Portrait Area --- */
+    .card-portrait {
+      position: relative;
+      width: 100%;
+      height: 300px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      overflow: hidden;
+      background: radial-gradient(
+        ellipse at 50% 80%,
+        rgba(101, 176, 216, 0.06) 0%,
+        transparent 70%
+      );
+      margin-bottom: -20px;
+    }
+
+    .card-portrait img {
+      max-height: 290px;
+      width: 100%;
+      object-fit: contain;
+      object-position: bottom center;
+      display: block;
+      filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.6));
+      transition: transform 0.4s ease;
+      /* Bottom 40px hidden + 50px fade above it */
+      -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 90px), transparent calc(100% - 40px), transparent);
+      mask-image: linear-gradient(to bottom, black calc(100% - 90px), transparent calc(100% - 40px), transparent);
+    }
+
+    .character-card:hover .card-portrait img {
+      transform: scale(1.04);
+    }
+
+    /* --- Row Separator (nightreign-infobox-hr.png style) --- */
+    .card-separator {
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(
+        90deg,
+        transparent 5%,
+        rgba(101, 176, 216, 0.1) 15%,
+        rgba(101, 176, 216, 0.35) 40%,
+        rgba(152, 219, 255, 0.5) 50%,
+        rgba(101, 176, 216, 0.35) 60%,
+        rgba(101, 176, 216, 0.1) 85%,
+        transparent 95%
+      );
+    }
+
+    /* --- Card Info Area --- */
+    .card-info {
+      padding: 18px 20px 0;
+      text-align: center;
+    }
+
+    .card-info .character-name {
+      font-family: 'Spectral', Georgia, serif;
+      font-weight: 500;
+      font-size: 1.5em;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #fff;
+      text-shadow: 2px 1px 2px #000;
+      margin: 0;
+    }
+
+    /* --- Reload Button (PC: card bottom center) --- */
+    .reload-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto;
+      padding: 10px 0 14px;
+      width: 100%;
+      background: none;
+      border: none;
+      cursor: pointer;
+      z-index: 2;
+    }
+
+    .reload-btn img {
+      width: 30px;
+      height: 30px;
+      /* Black → deep blue accent */
+      filter: invert(68%) sepia(30%) saturate(600%) hue-rotate(170deg) brightness(85%) contrast(95%);
+      opacity: 0.9;
+    }
+
+    /* --- Unselected State --- */
+    .is-unselected .card-portrait img {
+      opacity: 0.4;
+      /* All-edges 70px fade (PC), bottom 20px hidden */
+      -webkit-mask-image:
+        linear-gradient(to bottom, transparent, black 70px, black calc(100% - 90px), transparent calc(100% - 20px), transparent),
+        linear-gradient(to right, transparent, black 70px, black calc(100% - 70px), transparent);
+      -webkit-mask-composite: source-in;
+      mask-image:
+        linear-gradient(to bottom, transparent, black 70px, black calc(100% - 90px), transparent calc(100% - 20px), transparent),
+        linear-gradient(to right, transparent, black 70px, black calc(100% - 70px), transparent);
+      mask-composite: intersect;
+    }
+
+    .is-unselected .card-info .character-name {
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    /* --- Responsive: Tablet (930px以下) ---
+     * PC最小幅: 280*3 + 24*2 + 20*2 = 928px
+     * ゆとりある2+1グリッド、paddingで幅を制御
+     */
+    @media (max-width: 930px) {
+      .main-container {
+        padding: 32px 20px 50px;
+      }
+
+      .page-title {
+        margin-bottom: 36px;
+      }
+
+      .page-title h1 {
+        font-size: 1.8em;
+      }
+
+      .card-grid {
+        flex-wrap: wrap;
+        gap: 20px;
+        max-width: 500px;
+      }
+
+      .character-card {
+        flex: 0 0 calc(50% - 10px);
+        width: auto;
+      }
+
+      /* Reorder: name on top, portrait below */
+      .card-inner {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .card-info {
+        order: -1;
+        padding: 14px 12px 10px;
+      }
+
+      .card-info .character-name {
+        font-size: 1.2em;
+      }
+
+      .card-separator {
+        order: 0;
+      }
+
+      .card-portrait {
+        order: 1;
+        height: 200px;
+        align-items: flex-start;
+        padding: 12px;
+        margin-bottom: 0;
+      }
+
+      .card-portrait img {
+        max-height: none;
+        height: 100%;
+        width: 100%;
+        object-fit: cover;
+        object-position: top center;
+        /* Bottom 40px fade to transparent → card bg shows through */
+        -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 40px), transparent);
+        mask-image: linear-gradient(to bottom, black calc(100% - 40px), transparent);
+      }
+
+      /* Unselected: all-edges 40px fade */
+      .is-unselected .card-portrait img {
+        -webkit-mask-image:
+          linear-gradient(to bottom, transparent, black 40px, black calc(100% - 40px), transparent),
+          linear-gradient(to right, transparent, black 40px, black calc(100% - 40px), transparent);
+        -webkit-mask-composite: source-in;
+        mask-image:
+          linear-gradient(to bottom, transparent, black 40px, black calc(100% - 40px), transparent),
+          linear-gradient(to right, transparent, black 40px, black calc(100% - 40px), transparent);
+        mask-composite: intersect;
+      }
+
+      /* Unselected reload button: centered overlay */
+      .is-unselected .reload-btn {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 100%;
+        padding: 0;
+        z-index: 3;
+        background: none;
+        border-radius: 0;
+        right: auto;
+        height: auto;
+      }
+
+      .is-unselected .reload-btn img {
+        width: 45px;
+        height: 45px;
+      }
+
+      /* Reload button: portrait top-right overlay
+       * card-info ~44px + separator 3px = 47px offset to portrait top
+       */
+      .reload-btn {
+        position: absolute;
+        top: 50px;
+        right: 4px;
+        margin: 0;
+        padding: 0;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(6, 10, 20, 0.75) 35%, transparent 70%);
+      }
+
+      .reload-btn img {
+        width: 32px;
+        height: 32px;
+      }
+    }
+
+    /* --- Responsive: SP (480px以下) ---
+     * コンパクトな2+1グリッド、gap・paddingはTabletと統一
+     */
+    @media (max-width: 480px) {
+      .main-container {
+        padding: 20px 20px 40px;
+      }
+
+      .page-title {
+        margin-bottom: 24px;
+      }
+
+      .page-title h1 {
+        font-size: 1.4em;
+      }
+
+      .card-grid {
+        max-width: none;
+      }
+
+      .card-info {
+        padding: 10px 8px 6px;
+      }
+
+      .card-info .character-name {
+        font-size: 0.95em;
+      }
+
+      .card-portrait {
+        height: 130px;
+        padding: 8px;
+      }
+
+      .reload-btn {
+        top: 45px;
+        width: 50px;
+        height: 40px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-fixed"></div>
+  <div class="bg-overlay"></div>
+
+  <div class="main-container">
+
+    <div class="page-title">
+      <h1>Nightreign Random Picker</h1>
+      <div class="subtitle">Nightfarer Select</div>
+      <hr class="title-hr">
+    </div>
+
+    <div class="card-grid">
+
+      <!-- Unselected -->
+      <div class="character-card is-unselected">
+        <div class="card-inner">
+          <div class="card-portrait">
+            <img src="images/unselected.png" alt="Unselected">
+          </div>
+          <div class="card-separator"></div>
+          <div class="card-info">
+            <h2 class="character-name">Unselected</h2>
+          </div>
+          <button class="reload-btn" aria-label="Reroll">
+            <img src="images/reload.png" alt="reload">
+          </button>
+        </div>
+      </div>
+
+      <!-- Raider -->
+      <div class="character-card">
+        <div class="card-inner">
+          <div class="card-portrait">
+            <img src="images/raider.png" alt="Raider">
+          </div>
+          <div class="card-separator"></div>
+          <div class="card-info">
+            <h2 class="character-name">Raider</h2>
+          </div>
+          <button class="reload-btn" aria-label="Reroll Raider">
+            <img src="images/reload.png" alt="reload">
+          </button>
+        </div>
+      </div>
+
+      <!-- Scholar -->
+      <div class="character-card">
+        <div class="card-inner">
+          <div class="card-portrait">
+            <img src="images/scholar.png" alt="Scholar">
+          </div>
+          <div class="card-separator"></div>
+          <div class="card-info">
+            <h2 class="character-name">Scholar</h2>
+          </div>
+          <button class="reload-btn" aria-label="Reroll Scholar">
+            <img src="images/reload.png" alt="reload">
+          </button>
+        </div>
+      </div>
+
+    </div><!-- .card-grid -->
+  </div><!-- .main-container -->
+
+</body>
+</html>
