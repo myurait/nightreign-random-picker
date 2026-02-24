@@ -266,6 +266,38 @@
       color: rgba(255, 255, 255, 0.4);
     }
 
+    /* --- Randomize All Button --- */
+    .randomize-all-wrap {
+      display: flex;
+      justify-content: center;
+      margin-top: 36px;
+    }
+
+    .randomize-all-btn {
+      padding: 14px 48px;
+      background: rgba(6, 10, 20, 0.85);
+      border: 1px solid rgba(101, 176, 216, 0.35);
+      color: rgba(152, 219, 255, 0.9);
+      font-family: 'Spectral', Georgia, serif;
+      font-size: 1em;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+    }
+
+    .randomize-all-btn:hover {
+      background: rgba(101, 176, 216, 0.12);
+      border-color: rgba(101, 176, 216, 0.6);
+      color: #98dbff;
+    }
+
+    @media (min-width: 931px) {
+      .randomize-all-btn {
+        font-size: 1.5em;
+      }
+    }
+
     /* --- Responsive: Tablet (930px以下) ---
      * PC最小幅: 280*3 + 24*2 + 20*2 = 928px
      * ゆとりある2+1グリッド、paddingで幅を制御
@@ -292,6 +324,7 @@
       .character-card {
         flex: 0 0 calc(50% - 10px);
         width: auto;
+        min-width: 0;
       }
 
       /* Reorder: name on top, portrait below */
@@ -441,7 +474,7 @@
 
     <div class="card-grid">
 
-      <!-- Unselected -->
+      <!-- Slot 1 -->
       <div class="character-card is-unselected">
         <div class="card-inner">
           <div class="card-portrait">
@@ -457,40 +490,110 @@
         </div>
       </div>
 
-      <!-- Raider -->
-      <div class="character-card">
+      <!-- Slot 2 -->
+      <div class="character-card is-unselected">
         <div class="card-inner">
           <div class="card-portrait">
-            <img src="images/raider.png" alt="Raider">
+            <img src="images/unselected.png" alt="Unselected">
           </div>
           <div class="card-separator"></div>
           <div class="card-info">
-            <h2 class="character-name">Raider</h2>
+            <h2 class="character-name">Unselected</h2>
           </div>
-          <button class="reload-btn" aria-label="Reroll Raider">
+          <button class="reload-btn" aria-label="Reroll">
             <img src="images/reload.png" alt="reload">
           </button>
         </div>
       </div>
 
-      <!-- Scholar -->
-      <div class="character-card">
+      <!-- Slot 3 -->
+      <div class="character-card is-unselected">
         <div class="card-inner">
           <div class="card-portrait">
-            <img src="images/scholar.png" alt="Scholar">
+            <img src="images/unselected.png" alt="Unselected">
           </div>
           <div class="card-separator"></div>
           <div class="card-info">
-            <h2 class="character-name">Scholar</h2>
+            <h2 class="character-name">Unselected</h2>
           </div>
-          <button class="reload-btn" aria-label="Reroll Scholar">
+          <button class="reload-btn" aria-label="Reroll">
             <img src="images/reload.png" alt="reload">
           </button>
         </div>
       </div>
 
     </div><!-- .card-grid -->
+
+    <div class="randomize-all-wrap">
+      <button class="randomize-all-btn" aria-label="Randomize All">
+        Randomize All
+      </button>
+    </div>
+
   </div><!-- .main-container -->
+
+  <script>
+    const CHARACTERS = [
+      { id: 'duchess',    name: 'Duchess' },
+      { id: 'executor',   name: 'Executor' },
+      { id: 'guardian',   name: 'Guardian' },
+      { id: 'ironeye',    name: 'Ironeye' },
+      { id: 'raider',     name: 'Raider' },
+      { id: 'recluse',    name: 'Recluse' },
+      { id: 'revenant',   name: 'Revenant' },
+      { id: 'scholar',    name: 'Scholar' },
+      { id: 'undertaker', name: 'Undertaker' },
+      { id: 'wylder',     name: 'Wylder' },
+    ];
+
+    function getRandomCharacter(excludeIds) {
+      const pool = CHARACTERS.filter(c => !excludeIds.includes(c.id));
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    function getCurrentCharacterId(card) {
+      const img = card.querySelector('.card-portrait img');
+      const match = img.src.match(/images\/(.+)\.png/);
+      return match ? match[1] : null;
+    }
+
+    function applyCharacter(card, character) {
+      const portrait = card.querySelector('.card-portrait img');
+      const nameEl = card.querySelector('.character-name');
+      const btn = card.querySelector('.reload-btn');
+
+      portrait.src = `images/${character.id}.png`;
+      portrait.alt = character.name;
+      nameEl.textContent = character.name;
+      btn.setAttribute('aria-label', `Reroll ${character.name}`);
+      card.classList.remove('is-unselected');
+    }
+
+    // Individual reload
+    document.querySelectorAll('.reload-btn').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const card = btn.closest('.character-card');
+        const cards = [...document.querySelectorAll('.character-card')];
+        const usedIds = cards
+          .filter(c => c !== card && !c.classList.contains('is-unselected'))
+          .map(c => getCurrentCharacterId(c))
+          .filter(Boolean);
+        const currentId = getCurrentCharacterId(card);
+        usedIds.push(currentId);
+
+        const next = getRandomCharacter(usedIds);
+        if (next) applyCharacter(card, next);
+      });
+    });
+
+    // Randomize All
+    document.querySelector('.randomize-all-btn').addEventListener('click', () => {
+      const cards = [...document.querySelectorAll('.character-card')];
+      const shuffled = [...CHARACTERS].sort(() => Math.random() - 0.5);
+      cards.forEach((card, i) => applyCharacter(card, shuffled[i]));
+    });
+  </script>
 
 </body>
 </html>
