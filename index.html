@@ -262,6 +262,10 @@
       mask-composite: intersect;
     }
 
+    .lang-ja .card-info .character-name {
+      color: rgba(255, 255, 255, 0.78);
+    }
+
     .is-unselected .card-info .character-name {
       color: rgba(255, 255, 255, 0.4);
     }
@@ -533,17 +537,20 @@
   </div><!-- .main-container -->
 
   <script>
+    const LANG = navigator.language.startsWith('ja') ? 'ja' : 'en';
+    const UNSELECTED_LABEL = LANG === 'ja' ? '選択せよ' : 'Unselected';
+
     const CHARACTERS = [
-      { id: 'duchess',    name: 'Duchess' },
-      { id: 'executor',   name: 'Executor' },
-      { id: 'guardian',   name: 'Guardian' },
-      { id: 'ironeye',    name: 'Ironeye' },
-      { id: 'raider',     name: 'Raider' },
-      { id: 'recluse',    name: 'Recluse' },
-      { id: 'revenant',   name: 'Revenant' },
-      { id: 'scholar',    name: 'Scholar' },
-      { id: 'undertaker', name: 'Undertaker' },
-      { id: 'wylder',     name: 'Wylder' },
+      { id: 'duchess',    name: { en: 'Duchess',    ja: 'レディ' } },
+      { id: 'executor',   name: { en: 'Executor',   ja: '執行者' } },
+      { id: 'guardian',   name: { en: 'Guardian',   ja: '守護者' } },
+      { id: 'ironeye',    name: { en: 'Ironeye',    ja: '鉄の目' } },
+      { id: 'raider',     name: { en: 'Raider',     ja: '無頼漢' } },
+      { id: 'recluse',    name: { en: 'Recluse',    ja: '隠者' } },
+      { id: 'revenant',   name: { en: 'Revenant',   ja: '復讐者' } },
+      { id: 'scholar',    name: { en: 'Scholar',    ja: '学者' } },
+      { id: 'undertaker', name: { en: 'Undertaker', ja: '葬儀屋' } },
+      { id: 'wylder',     name: { en: 'Wylder',     ja: '追跡者' } },
     ];
 
     function getRandomCharacter(excludeIds) {
@@ -561,13 +568,20 @@
       const portrait = card.querySelector('.card-portrait img');
       const nameEl = card.querySelector('.character-name');
       const btn = card.querySelector('.reload-btn');
+      const displayName = character.name[LANG];
 
       portrait.src = `images/${character.id}.png`;
-      portrait.alt = character.name;
-      nameEl.textContent = character.name;
-      btn.setAttribute('aria-label', `Reroll ${character.name}`);
+      portrait.alt = displayName;
+      nameEl.textContent = displayName;
+      btn.setAttribute('aria-label', `Reroll ${displayName}`);
       card.classList.remove('is-unselected');
     }
+
+    // Apply language
+    if (LANG === 'ja') document.documentElement.classList.add('lang-ja');
+    document.querySelectorAll('.is-unselected .character-name').forEach(el => {
+      el.textContent = UNSELECTED_LABEL;
+    });
 
     // Individual reload
     document.querySelectorAll('.reload-btn').forEach(btn => {
