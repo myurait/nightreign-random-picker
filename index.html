@@ -270,10 +270,12 @@
       color: rgba(255, 255, 255, 0.4);
     }
 
-    /* --- Randomize All Button --- */
-    .randomize-all-wrap {
+    /* --- Controls (DLC Toggle + Randomize All) --- */
+    .controls-wrap {
       display: flex;
-      justify-content: center;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
       margin-top: 36px;
     }
 
@@ -299,6 +301,66 @@
     @media (min-width: 931px) {
       .randomize-all-btn {
         font-size: 1.5em;
+      }
+    }
+
+    /* --- DLC Toggle --- */
+    .dlc-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+      opacity: 0.8;
+    }
+
+    .dlc-toggle input {
+      display: none;
+    }
+
+    .dlc-toggle-slider {
+      position: relative;
+      width: 40px;
+      height: 22px;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(101, 176, 216, 0.9);
+      border-radius: 11px;
+      transition: background 0.3s ease, border-color 0.3s ease;
+    }
+
+    .dlc-toggle-slider::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 16px;
+      height: 16px;
+      background: rgba(200, 200, 200, 0.7);
+      border-radius: 50%;
+      transition: transform 0.3s ease, background 0.3s ease;
+    }
+
+    .dlc-toggle input:checked + .dlc-toggle-slider {
+      background: rgba(101, 176, 216, 0.4);
+      border-color: rgba(101, 176, 216, 0.9);
+    }
+
+    .dlc-toggle input:checked + .dlc-toggle-slider::after {
+      transform: translateX(18px);
+      background: rgba(152, 219, 255, 0.9);
+    }
+
+    .dlc-toggle-label {
+      font-family: 'Spectral', Georgia, serif;
+      font-size: 0.85em;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: rgba(152, 219, 255, 0.9);
+    }
+
+    @media (min-width: 931px) {
+      .dlc-toggle-label {
+        font-size: 1em;
       }
     }
 
@@ -528,10 +590,15 @@
 
     </div><!-- .card-grid -->
 
-    <div class="randomize-all-wrap">
+    <div class="controls-wrap">
       <button class="randomize-all-btn" aria-label="Randomize All">
         Randomize All
       </button>
+      <label class="dlc-toggle">
+        <input type="checkbox" id="dlc-toggle-input" checked>
+        <span class="dlc-toggle-slider"></span>
+        <span class="dlc-toggle-label">The Forsaken Hollows</span>
+      </label>
     </div>
 
   </div><!-- .main-container -->
@@ -540,21 +607,29 @@
     const LANG = navigator.language.startsWith('ja') ? 'ja' : 'en';
     const UNSELECTED_LABEL = LANG === 'ja' ? '選択せよ' : 'Unselected';
 
+    const DLC_IDS = ['undertaker', 'scholar'];
+
     const CHARACTERS = [
-      { id: 'duchess',    name: { en: 'Duchess',    ja: 'レディ' } },
-      { id: 'executor',   name: { en: 'Executor',   ja: '執行者' } },
-      { id: 'guardian',   name: { en: 'Guardian',   ja: '守護者' } },
-      { id: 'ironeye',    name: { en: 'Ironeye',    ja: '鉄の目' } },
-      { id: 'raider',     name: { en: 'Raider',     ja: '無頼漢' } },
-      { id: 'recluse',    name: { en: 'Recluse',    ja: '隠者' } },
-      { id: 'revenant',   name: { en: 'Revenant',   ja: '復讐者' } },
-      { id: 'scholar',    name: { en: 'Scholar',    ja: '学者' } },
-      { id: 'undertaker', name: { en: 'Undertaker', ja: '葬儀屋' } },
-      { id: 'wylder',     name: { en: 'Wylder',     ja: '追跡者' } },
+      { id: 'duchess',    name: { en: 'Duchess',    ja: 'レディ' }, dlc: false },
+      { id: 'executor',   name: { en: 'Executor',   ja: '執行者' }, dlc: false },
+      { id: 'guardian',   name: { en: 'Guardian',   ja: '守護者' }, dlc: false },
+      { id: 'ironeye',    name: { en: 'Ironeye',    ja: '鉄の目' }, dlc: false },
+      { id: 'raider',     name: { en: 'Raider',     ja: '無頼漢' }, dlc: false },
+      { id: 'recluse',    name: { en: 'Recluse',    ja: '隠者' }, dlc: false },
+      { id: 'revenant',   name: { en: 'Revenant',   ja: '復讐者' }, dlc: false },
+      { id: 'scholar',    name: { en: 'Scholar',    ja: '学者' }, dlc: true },
+      { id: 'undertaker', name: { en: 'Undertaker', ja: '葬儀屋' }, dlc: true },
+      { id: 'wylder',     name: { en: 'Wylder',     ja: '追跡者' }, dlc: false },
     ];
 
+    const dlcToggle = document.getElementById('dlc-toggle-input');
+
+    function getAvailableCharacters() {
+      return dlcToggle.checked ? CHARACTERS : CHARACTERS.filter(c => !c.dlc);
+    }
+
     function getRandomCharacter(excludeIds) {
-      const pool = CHARACTERS.filter(c => !excludeIds.includes(c.id));
+      const pool = getAvailableCharacters().filter(c => !excludeIds.includes(c.id));
       return pool[Math.floor(Math.random() * pool.length)];
     }
 
@@ -604,7 +679,7 @@
     // Randomize All
     document.querySelector('.randomize-all-btn').addEventListener('click', () => {
       const cards = [...document.querySelectorAll('.character-card')];
-      const shuffled = [...CHARACTERS].sort(() => Math.random() - 0.5);
+      const shuffled = [...getAvailableCharacters()].sort(() => Math.random() - 0.5);
       cards.forEach((card, i) => applyCharacter(card, shuffled[i]));
     });
   </script>
