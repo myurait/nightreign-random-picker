@@ -628,8 +628,10 @@
       return dlcToggle.checked ? CHARACTERS : CHARACTERS.filter(c => !c.dlc);
     }
 
-    function getRandomCharacter(excludeIds) {
+    // excludeIds は「その場で除外したいID」だけに限定（他カードの重複は許容）
+    function getRandomCharacter(excludeIds = []) {
       const pool = getAvailableCharacters().filter(c => !excludeIds.includes(c.id));
+      if (pool.length === 0) return null;
       return pool[Math.floor(Math.random() * pool.length)];
     }
 
@@ -663,24 +665,22 @@
       btn.addEventListener('click', e => {
         e.stopPropagation();
         const card = btn.closest('.character-card');
-        const cards = [...document.querySelectorAll('.character-card')];
-        const usedIds = cards
-          .filter(c => c !== card && !c.classList.contains('is-unselected'))
-          .map(c => getCurrentCharacterId(c))
-          .filter(Boolean);
-        const currentId = getCurrentCharacterId(card);
-        usedIds.push(currentId);
 
-        const next = getRandomCharacter(usedIds);
+        // 1枚再抽選時は「そのカードの現在キャラ」だけ除外
+        const currentId = getCurrentCharacterId(card);
+        const next = getRandomCharacter(currentId ? [currentId] : []);
+
         if (next) applyCharacter(card, next);
       });
     });
 
-    // Randomize All
+    // Randomize All（他カードの重複を許容）
     document.querySelector('.randomize-all-btn').addEventListener('click', () => {
       const cards = [...document.querySelectorAll('.character-card')];
-      const shuffled = [...getAvailableCharacters()].sort(() => Math.random() - 0.5);
-      cards.forEach((card, i) => applyCharacter(card, shuffled[i]));
+      cards.forEach(card => {
+        const next = getRandomCharacter([]);
+        if (next) applyCharacter(card, next);
+      });
     });
   </script>
 
